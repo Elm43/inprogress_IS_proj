@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 Game - Flower Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #E0F7FA; /* Light Blue background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            background-image: url('https://www.transparenttextures.com/patterns/flowered.png'); /* Flower pattern */
+            background-size: 200px;
+            background-repeat: repeat;
+        }
+
+        .header {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0D47A1;
+            margin-bottom: 10px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            width: 350px;  /* Adjusted to fit the smaller board */
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .score-label {
+            font-size: 20px;
+            color: #0D47A1; /* Deep Blue */
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #01579B; /* Blue */
+        }
+
+        .game-container {
+            position: relative;
+            width: 400px;  /* Smaller board size */
+            height: 400px; /* Smaller board size */
+            background-color: #0288D1; /* Bright Blue background */
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);  /* 4x4 grid (smaller) */
+            grid-template-rows: repeat(4, 1fr);     /* 4x4 grid (smaller) */
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .tile {
+            width: 80px;  /* Smaller tiles */
+            height: 80px; /* Smaller tiles */
+            background-color: #B3E5FC; /* Light Blue */
+            border-radius: 5px;
+            font-size: 40px;  /* Smaller font size */
+            font-weight: bold;
+            color: #FFFFFF; /* White text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            position: absolute;
+        }
+
+        .tile-2 { background-color: #81D4FA; } /* Lighter Blue */
+        .tile-4 { background-color: #4FC3F7; } /* Sky Blue */
+        .tile-8 { background-color: #29B6F6; } /* Dodger Blue */
+        .tile-16 { background-color: #039BE5; } /* Royal Blue */
+        .tile-32 { background-color: #0288D1; } /* Bright Blue */
+        .tile-64 { background-color: #0277BD; } /* Deep Sky Blue */
+        .tile-128 { background-color: #01579B; } /* Dark Blue */
+        .tile-256 { background-color: #003C8F; } /* Navy Blue */
+        .tile-512 { background-color: #002F6C; } /* Darker Blue */
+        .tile-1024 { background-color: #00B8D4; } /* Light Cyan */
+        .tile-2048 { background-color: #00ACC1; } /* Cyan */
+        
+        .lose-message {
+            font-size: 32px;
+            color: #0D47A1; /* Deep Blue */
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <a href = "../index.html">Home</a>
+    <br>
+    <div class="header">Don't Lose ;)</div> <!-- Message at the top -->
+
+    <div class="score-board">
+        <div class="score-label">Score</div>
+        <div class="score-value" id="score">0</div>
+    </div>
+
+    <div class="game-container" id="gameContainer"></div>
+    <div class="lose-message" id="loseMessage">YOU LOSE</div>
+
+    <script>
+        const boardSize = 4; // 4x4 grid (smaller board)
+        let grid = [];
+        let score = 0;
+        let tilesToMove = [];
+
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreDisplay = document.getElementById('score');
+        const loseMessage = document.getElementById('loseMessage');
+
+        // Initialize the game
+        function initGame() {
+            grid = [];
+            score = 0;
+            tilesToMove = [];
+
+            // Create empty grid
+            for (let i = 0; i < boardSize; i++) {
+                grid[i] = [];
+                for (let j = 0; j < boardSize; j++) {
+                    grid[i][j] = 0;
+                }
+            }
+
+            // Add two starting tiles
+            addRandomTile();
+            addRandomTile();
+
+            updateBoard();
+        }
+
+        // Add a random tile (2 or 4) to an empty space
+        function addRandomTile() {
+            let emptyCells = [];
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (grid[i][j] === 0) {
+                        emptyCells.push([i, j]);
+                    }
+                }
+            }
+            if (emptyCells.length > 0) {
+                const [i, j] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                grid[i][j] = Math.random() < 0.9 ? 2 : 4;
+            }
+        }
+
+        // Update the board UI
+        function updateBoard() {
+            gameContainer.innerHTML = ''; // Clear previous tiles
+            tilesToMove = []; // Clear the tiles to animate
+
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    const tile = grid[i][j];
+                    const tileElement = document.createElement('div');
+                    tileElement.classList.add('tile');
+                    if (tile !== 0) {
+                        tileElement.textContent = tile;
+                        tileElement.classList.add(`tile-${tile}`);
+                    }
+
+                    // Position tiles based on their row and column
+                    const positionX = j * 100 + 10; // Adjust position for smaller tiles
+                    const positionY = i * 100 + 10; // Adjust position for smaller tiles
+                    tileElement.style.transform = `translate(${positionX}px, ${positionY}px)`;
+
+                    gameContainer.appendChild(tileElement);
+                }
+            }
+
+            scoreDisplay.textContent = score;
+            checkGameOver();
+        }
+
+        // Check if the game is over
+        function checkGameOver() {
+            // Check if there are any empty spaces or moves left
+            let canMove = false;
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    if (grid[i][j] === 0) {
+                        canMove = true;
+                        break;
+                    }
+                    if (i < boardSize - 1 && grid[i][j] === grid[i + 1][j]) {
+                        canMove = true;
+                        break;
+                    }
+                    if (j < boardSize - 1 && grid[i][j] === grid[i][j + 1]) {
+                        canMove = true;
+                        break;
+                    }
+                }
+            }
+
+            // If no moves are available, display "YOU LOSE"
+            if (!canMove) {
+                loseMessage.style.display = 'block';
+            }
+        }
+
+        // Merge tiles in the same row or column
+        function mergeTiles(tiles) {
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (tiles[i] === tiles[i + 1]) {
+                    tiles[i] *= 2;
+                    score += tiles[i];
+                    tiles[i + 1] = 0;
+                }
+            }
+            tiles = tiles.filter(tile => tile !== 0); // Remove merged tiles
+            while (tiles.length < boardSize) tiles.push(0); // Fill with zeros
+        }
+
+        // Handle key press events
+        function handleKeyPress(event) {
+            const previousGrid = JSON.stringify(grid);
+            if (event.key === 'ArrowUp') {
+                moveUp();
+            } else if (event.key === 'ArrowDown') {
+                moveDown();
+            } else if (event.key === 'ArrowLeft') {
+                moveLeft();
+            } else if (event.key === 'ArrowRight') {
+                moveRight();
+            }
+            if (JSON.stringify(grid) !== previousGrid) {
+                addRandomTile();
+                updateBoard();
+            }
+        }
+
+        // Move tiles up
+        function moveUp() {
+            for (let j = 0; j < boardSize; j++) {
+                let column = [];
+                for (let i = 0; i < boardSize; i++) {
+                    if (grid[i][j] !== 0) column.push(grid[i][j]);
+                }
+                mergeTiles(column);
+                for (let i = 0; i < boardSize; i++) {
+                    grid[i][j] = column[i] || 0;
+                }
+            }
+        }
+
+        // Move tiles down
+        function moveDown() {
+            for (let j = 0; j < boardSize; j++) {
+                let column = [];
+                for (let i = boardSize - 1; i >= 0; i--) {
+                    if (grid[i][j] !== 0) column.push(grid[i][j]);
+                }
+                mergeTiles(column);
+                for (let i = boardSize - 1; i >= 0; i--) {
+                    grid[i][j] = column[boardSize - 1 - i] || 0;
+                }
+            }
+        }
+
+        // Move tiles left
+        function moveLeft() {
+            for (let i = 0; i < boardSize; i++) {
+                let row = grid[i].filter(tile => tile !== 0);
+                mergeTiles(row);
+                while (row.length < boardSize) row.push(0);
+                grid[i] = row;
+            }
+        }
+
+        // Move tiles right
+        function moveRight() {
+            for (let i = 0; i < boardSize; i++) {
+                let row = grid[i].filter(tile => tile !== 0);
+                mergeTiles(row.reverse());
+                while (row.length < boardSize) row.push(0);
+                grid[i] = row.reverse();
+            }
+        }
+
+        // Start the game
+        document.addEventListener('keydown', handleKeyPress);
+        initGame();
+    </script>
+
+</body>
+</html>
